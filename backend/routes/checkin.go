@@ -2,25 +2,42 @@ package routes
 
 import (
 	"context"
+	"fmt"
 	"net/http"
+	"os"
 	"time"
 
 	"backend/models"
 
 	"github.com/gofiber/fiber/v2"
+	"github.com/golang-jwt/jwt/v5"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
 )
 
 func RegisterCheckinRoutes(app *fiber.App, db *mongo.Database) {
+	jwtSecret := []byte(os.Getenv("JWT_SECRET")) // Pindahkan ke dalam fungsi agar selalu update
 	authRequired := func(c *fiber.Ctx) error {
 		tokenStr := c.Get("Authorization")
 		if tokenStr == "" || len(tokenStr) < 8 {
 			return c.Status(http.StatusUnauthorized).JSON(fiber.Map{"error": "Missing or invalid token"})
 		}
 		tokenStr = tokenStr[7:] // Bearer ...
-		// ...parse JWT sama seperti di user.go...
+		token, err := jwt.ParseWithClaims(tokenStr, jwt.MapClaims{}, func(token *jwt.Token) (interface{}, error) {
+			return jwtSecret, nil
+		})
+		if err != nil || !token.Valid {
+			// Print pesan error JWT parse yang jelas
+			fmt.Println("JWT parse error:", err)
+			return c.Status(http.StatusUnauthorized).JSON(fiber.Map{"error": "Invalid token"})
+		}
+		claims, ok := token.Claims.(jwt.MapClaims)
+		if !ok {
+			return c.Status(http.StatusUnauthorized).JSON(fiber.Map{"error": "Invalid token claims"})
+		}
+		c.Locals("userId", claims["id"])
+		c.Locals("userRole", claims["role"])
 		return c.Next()
 	}
 

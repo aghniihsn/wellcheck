@@ -20,6 +20,7 @@ var mongoClient *mongo.Client
 func main() {
 	// Load .env
 	_ = godotenv.Load()
+	log.Println("JWT_SECRET:", os.Getenv("JWT_SECRET"))
 
 	app := fiber.New()
 	app.Use(cors.New())

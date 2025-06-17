@@ -16,9 +16,8 @@ import (
 	"golang.org/x/crypto/bcrypt"
 )
 
-var jwtSecret = []byte(os.Getenv("JWT_SECRET"))
-
 func RegisterUserRoutes(app *fiber.App, db *mongo.Database) {
+	jwtSecret := []byte(os.Getenv("JWT_SECRET")) // Pindahkan ke dalam fungsi agar selalu update
 	app.Post("/api/auth/register", func(c *fiber.Ctx) error {
 		var req struct {
 			Name     string `json:"name"`
@@ -97,7 +96,7 @@ func RegisterUserRoutes(app *fiber.App, db *mongo.Database) {
 			return c.Status(http.StatusUnauthorized).JSON(fiber.Map{"error": "Missing or invalid token"})
 		}
 		tokenStr = tokenStr[7:] // Bearer ...
-		token, err := jwt.Parse(tokenStr, func(token *jwt.Token) (interface{}, error) {
+		token, err := jwt.ParseWithClaims(tokenStr, jwt.MapClaims{}, func(token *jwt.Token) (interface{}, error) {
 			return jwtSecret, nil
 		})
 		if err != nil || !token.Valid {
