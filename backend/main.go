@@ -37,6 +37,8 @@ func main() {
 
 	routes.RegisterCheckinRoutes(app, db)
 	routes.RegisterUserRoutes(app, db)
+	routes.RegisterProjectRoutes(app, db)
+	routes.RegisterTeamRoutes(app, db)
 
 	app.Get("/api/health", func(c *fiber.Ctx) error {
 		return c.JSON(fiber.Map{"status": "ok"})

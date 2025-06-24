@@ -124,4 +124,28 @@ func RegisterUserRoutes(app *fiber.App, db *mongo.Database) {
 		}
 		return c.JSON(fiber.Map{"id": user.ID.Hex(), "name": user.Name, "email": user.Email, "role": user.Role})
 	})
+
+	app.Get("/api/users", func(c *fiber.Ctx) error {
+		ctx := context.Background()
+		cur, err := db.Collection("users").Find(ctx, bson.M{})
+		if err != nil {
+			return c.Status(http.StatusInternalServerError).JSON(fiber.Map{"error": err.Error()})
+		}
+		var users []models.User
+		if err := cur.All(ctx, &users); err != nil {
+			return c.Status(http.StatusInternalServerError).JSON(fiber.Map{"error": err.Error()})
+		}
+		// Only return id, name, email, role, avatar
+		var result []fiber.Map
+		for _, u := range users {
+			result = append(result, fiber.Map{
+				"id":     u.ID.Hex(),
+				"name":   u.Name,
+				"email":  u.Email,
+				"role":   u.Role,
+				"avatar": u.Avatar,
+			})
+		}
+		return c.JSON(result)
+	})
 }
