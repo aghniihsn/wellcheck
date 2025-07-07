@@ -15,6 +15,7 @@ type Checkin struct {
 	Description string             `bson:"description" json:"description"`
 	CreatedAt   time.Time          `bson:"createdAt" json:"createdAt"`
 	FaceResult  *FaceResult        `bson:"faceResult,omitempty" json:"faceResult,omitempty"`
+	Status      string             `bson:"status" json:"status"` // present/absent
 }
 
 type FaceResult struct {

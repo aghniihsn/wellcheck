@@ -6,7 +6,6 @@ require (
 	github.com/gofiber/fiber/v2 v2.52.8
 	github.com/golang-jwt/jwt/v5 v5.2.2
 	github.com/joho/godotenv v1.5.1
-	github.com/jung-kurt/gofpdf v1.16.2
 	go.mongodb.org/mongo-driver v1.17.3
 	golang.org/x/crypto v0.26.0
 )

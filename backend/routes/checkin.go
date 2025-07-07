@@ -57,6 +57,7 @@ func RegisterCheckinRoutes(app *fiber.App, db *mongo.Database) {
 			return c.Status(http.StatusUnauthorized).JSON(fiber.Map{"error": "Unauthorized"})
 		}
 		objId, _ := primitive.ObjectIDFromHex(userId)
+		status := "present"
 		checkin := models.Checkin{
 			ID:          primitive.NewObjectID(),
 			UserID:      objId,
@@ -66,6 +67,7 @@ func RegisterCheckinRoutes(app *fiber.App, db *mongo.Database) {
 			Description: req.Description,
 			CreatedAt:   time.Now(),
 			FaceResult:  req.FaceData,
+			Status:      status,
 		}
 		_, err := db.Collection("checkins").InsertOne(context.Background(), checkin)
 		if err != nil {
