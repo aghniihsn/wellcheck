@@ -41,6 +41,31 @@ func RegisterCheckinRoutes(app *fiber.App, db *mongo.Database) {
 		return c.Next()
 	}
 
+	// GET /api/checkins - get all checkins (for manager, return all; for member, only their own)
+	app.Get("/api/checkins", authRequired, func(c *fiber.Ctx) error {
+		userId, ok := c.Locals("userId").(string)
+		if !ok {
+			return c.Status(http.StatusUnauthorized).JSON(fiber.Map{"error": "Unauthorized"})
+		}
+		userRole, _ := c.Locals("userRole").(string)
+		var filter bson.M
+		if userRole == "manager" || userRole == "project_manager" {
+			filter = bson.M{} // all data
+		} else {
+			objId, _ := primitive.ObjectIDFromHex(userId)
+			filter = bson.M{"userId": objId}
+		}
+		cur, err := db.Collection("checkins").Find(context.Background(), filter)
+		if err != nil {
+			return c.Status(http.StatusInternalServerError).JSON(fiber.Map{"error": err.Error()})
+		}
+		var checkins []models.Checkin
+		if err := cur.All(context.Background(), &checkins); err != nil {
+			return c.Status(http.StatusInternalServerError).JSON(fiber.Map{"error": err.Error()})
+		}
+		return c.JSON(checkins)
+	})
+
 	app.Post("/api/checkins", authRequired, func(c *fiber.Ctx) error {
 		var req struct {
 			Type        string             `json:"type"`
