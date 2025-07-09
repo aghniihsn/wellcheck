@@ -50,7 +50,63 @@ func RegisterProjectRoutes(app *fiber.App, db *mongo.Database) {
 		if err := cur.All(ctx, &projects); err != nil {
 			return c.Status(http.StatusInternalServerError).JSON(fiber.Map{"error": err.Error()})
 		}
-		return c.JSON(projects)
+
+		teamCol := db.Collection("teams")
+		userCol := db.Collection("users")
+
+		var result []fiber.Map
+		for _, p := range projects {
+			// Fetch teams for this project
+			var teams []models.Team
+			if len(p.Teams) > 0 {
+				teamCur, err := teamCol.Find(ctx, bson.M{"_id": bson.M{"$in": p.Teams}})
+				if err == nil {
+					_ = teamCur.All(ctx, &teams)
+				}
+			}
+
+			// For each team, fetch members as user objects
+			var teamList []fiber.Map
+			for _, t := range teams {
+				var members []models.User
+				if len(t.Members) > 0 {
+					userCur, err := userCol.Find(ctx, bson.M{"_id": bson.M{"$in": t.Members}})
+					if err == nil {
+						_ = userCur.All(ctx, &members)
+					}
+				}
+				// Convert member ObjectIDs to hex if needed, or return full user objects
+				var memberList []fiber.Map
+				for _, m := range members {
+					memberList = append(memberList, fiber.Map{
+						"id":     m.ID.Hex(),
+						"name":   m.Name,
+						"email":  m.Email,
+						"avatar": m.Avatar,
+						"role":   m.Role,
+					})
+				}
+				teamList = append(teamList, fiber.Map{
+					"id":          t.ID.Hex(),
+					"name":        t.Name,
+					"description": t.Description,
+					"members":     memberList,
+					"lead":        t.Lead.Hex(),
+					"createdAt":   t.CreatedAt,
+				})
+			}
+
+			result = append(result, fiber.Map{
+				"id":          p.ID.Hex(),
+				"name":        p.Name,
+				"description": p.Description,
+				"startDate":   p.StartDate,
+				"endDate":     p.EndDate,
+				"teams":       teamList,
+				"createdAt":   p.CreatedAt,
+			})
+		}
+		return c.JSON(result)
 	})
 
 	app.Get("/api/projects/:id", authRequired, func(c *fiber.Ctx) error {
